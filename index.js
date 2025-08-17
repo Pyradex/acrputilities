@@ -141,6 +141,116 @@ function findTeamRoleByCategory(guild, categoryValue) {
 // ───────────────────────────────────────────────────────────────────────────────
 async function registerSlashCommands() {
   const commands = [
+    // Bot setup: configure all channels and roles
+    {
+      name: 'setup-bot',
+      description: 'Configure all bot features including channels and roles.',
+      options: [
+        {
+          name: 'ticket_category',
+          description: 'Category where tickets will be created.',
+          type: 7, // CHANNEL
+          required: true,
+        },
+        {
+          name: 'log_channel',
+          description: 'Channel for moderation and ticket logs.',
+          type: 7, // CHANNEL
+          required: true,
+        },
+        {
+          name: 'approval_channel',
+          description: 'Channel for message approval requests.',
+          type: 7, // CHANNEL
+          required: true,
+        },
+        {
+          name: 'session_channel',
+          description: 'Channel for session announcements.',
+          type: 7, // CHANNEL
+          required: true,
+        },
+        {
+          name: 'staff_role',
+          description: 'Role for staff members.',
+          type: 8, // ROLE
+          required: true,
+        },
+        {
+          name: 'admin_role',
+          description: 'Role for administrators.',
+          type: 8, // ROLE
+          required: true,
+        },
+        {
+          name: 'under_investigation_role',
+          description: 'Role for members under investigation.',
+          type: 8, // ROLE
+          required: true,
+        }
+      ]
+    },
+
+    // Staff investigation
+    {
+      name: 'staff-investigation',
+      description: 'Place a staff member under investigation.',
+      options: [
+        {
+          name: 'member',
+          description: 'Staff member to investigate.',
+          type: 6, // USER
+          required: true,
+        },
+        {
+          name: 'reason',
+          description: 'Reason for investigation.',
+          type: 3, // STRING
+          required: true,
+        }
+      ]
+    },
+
+    // Rank change
+    {
+      name: 'rank-change',
+      description: 'Change a member\'s role/rank.',
+      options: [
+        {
+          name: 'member',
+          description: 'Member to change rank.',
+          type: 6, // USER
+          required: true,
+        },
+        {
+          name: 'new_role',
+          description: 'New role to assign.',
+          type: 8, // ROLE
+          required: true,
+        },
+        {
+          name: 'reason',
+          description: 'Reason for rank change.',
+          type: 3, // STRING
+          required: true,
+        }
+      ]
+    },
+
+    // Shift management
+    {
+      name: 'shift-start',
+      description: 'Start your staff shift.',
+    },
+    {
+      name: 'shift-end',
+      description: 'End your staff shift.',
+    },
+    {
+      name: 'shift-status',
+      description: 'Check current staff on shift.',
+    },
+
     // Ticket setup: drops the assistance dropdown (no embed) into a given channel
     {
       name: 'setup-assistance',
@@ -245,8 +355,18 @@ async function registerSlashCommands() {
 
   const rest = new REST({ version: '10' }).setToken(BOT_TOKEN);
   const appId = client.application.id;
+  
+  // Force refresh by clearing existing commands first
+  try {
+    await rest.put(Routes.applicationCommands(appId), { body: [] });
+    console.log('[slash] Cleared existing commands');
+  } catch (e) {
+    console.warn('[slash] Could not clear commands:', e.message);
+  }
+  
+  // Register new commands
   await rest.put(Routes.applicationCommands(appId), { body: commands });
-  console.log('[slash] Global commands registered.');
+  console.log('[slash] Global commands registered successfully');
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
