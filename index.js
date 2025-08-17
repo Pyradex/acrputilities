@@ -75,6 +75,9 @@ const TEAM_ROLE_NAMES = [
   'Game Team', 'Chain Team', 'Support Team', 'QA Team', 'Media Team', 'Event Team',
 ];
 const CATEGORY_OPTIONS = [
+  { label: 'General Support', value: 'general-support', roleName: 'Support Team' },
+  { label: 'Staff Report', value: 'staff-report', roleName: 'Support Team' },
+  { label: 'Management Support', value: 'management-support', roleName: 'Support Team' },
   { label: 'Support', value: 'support', roleName: 'Support Team' },
   { label: 'Game',    value: 'game',    roleName: 'Game Team' },
   { label: 'QA',      value: 'qa',      roleName: 'QA Team' },
