@@ -1,44 +1,35 @@
-const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder } = require('discord.js');
-const commands = require('./commands.js');
+import 'dotenv/config';
+import fs from 'fs-extra';
+import express from 'express';
+import { Client, GatewayIntentBits, Partials } from 'discord.js';
+import { handleCommands } from './commands.js';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
-    partials: [Partials.Channel]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+  partials: [Partials.Channel, Partials.Message, Partials.Reaction],
 });
 
-client.commands = new Collection();
-
-// Register commands
-for (const cmd of Object.values(commands)) {
-    client.commands.set(cmd.name, cmd);
-}
-
+// Ready
 client.once('ready', () => {
-    console.log(`Logged in as ${client.user.tag}`);
+  console.log(`${client.user.tag} is online!`);
 });
 
-// Interaction handler
-client.on('interactionCreate', async interaction => {
-    if (!interaction.isCommand() && !interaction.isStringSelectMenu()) return;
-
-    // Slash command handling
-    if (interaction.isCommand()) {
-        const command = client.commands.get(interaction.commandName);
-        if (!command) return;
-        try { await command.execute(interaction, client); } 
-        catch (err) { console.error(err); }
-    }
-
-    // Dropdown handling
-    if (interaction.isStringSelectMenu()) {
-        const customId = interaction.customId;
-        if (customId.startsWith('ticket-claim')) {
-            commands.ticketDropdown(interaction, client);
-        }
-        if (customId.startsWith('broadcast-approval')) {
-            commands.broadcastDropdown(interaction, client);
-        }
-    }
+// Handle commands
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand() && !interaction.isStringSelectMenu()) return;
+  handleCommands(client, interaction);
 });
 
-client.login(process.env.TOKEN);
+// Express ping for Render.com / UptimeRobot
+app.get('/', (req, res) => res.send('ACRP Utilities Bot is running!'));
+app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+
+// Login
+client.login(process.env.DISCORD_TOKEN);
