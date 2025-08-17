@@ -1,15 +1,22 @@
 {
-  "name": "ACRP-Utilities",
+  "name": "acrp-utilities",
   "version": "1.0.0",
-  "description": "ACRP Utilities Discord Bot",
+  "description": "ACRP Utilities Bot for tickets, moderation, sessions, and approvals",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
+  "keywords": [
+    "discord",
+    "bot",
+    "utilities",
+    "tickets",
+    "moderation",
+    "acrp"
+  ],
+  "author": "ACRP",
+  "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.16.0",
-    "express": "^4.18.2",
-    "fs-extra": "^11.1.1"
+    "discord.js": "^14.15.3"
   }
 }
