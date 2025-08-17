@@ -1,13 +1,13 @@
 {
   "name": "acrp-utilities",
   "version": "1.0.0",
-  "description": "Ticket system bot for ACRP",
+  "description": "ACRP Utilities Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "discord.js": "^14.15.3",
-    "dotenv": "^16.4.5"
+    "discord.js": "^14.16.3",
+    "express": "^4.19.2"
   }
 }
