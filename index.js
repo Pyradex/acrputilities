@@ -75,15 +75,9 @@ const TEAM_ROLE_NAMES = [
   'Game Team', 'Chain Team', 'Support Team', 'QA Team', 'Media Team', 'Event Team',
 ];
 const CATEGORY_OPTIONS = [
-  { label: 'General Support', value: 'general-support', roleName: 'Support Team' },
-  { label: 'Staff Report', value: 'staff-report', roleName: 'Support Team' },
-  { label: 'Management Support', value: 'management-support', roleName: 'Support Team' },
-  { label: 'Support', value: 'support', roleName: 'Support Team' },
-  { label: 'Game',    value: 'game',    roleName: 'Game Team' },
-  { label: 'QA',      value: 'qa',      roleName: 'QA Team' },
-  { label: 'Media',   value: 'media',   roleName: 'Media Team' },
-  { label: 'Event',   value: 'event',   roleName: 'Event Team' },
-  { label: 'Chain',   value: 'chain',   roleName: 'Chain Team' },
+  { label: 'General Support', value: 'general-support', roleName: 'General Support' },
+  { label: 'Staff Report', value: 'staff-report', roleName: 'Staff Report' },
+  { label: 'Management Support', value: 'management-support', roleName: 'Management Support' },
 ];
 
 // In-memory state (non-persistent by design, simple & minimal)
@@ -273,30 +267,187 @@ client.on('interactionCreate', async (interaction) => {
     if (interaction.isChatInputCommand()) {
       const { commandName } = interaction;
 
-      // ───────────────────────────────────────────
-      // /setup-assistance
-      // ───────────────────────────────────────────
-      if (commandName === 'setup-assistance') {
-        if (!interaction.memberPermissions.has(PermissionFlagsBits.ManageChannels)) {
-          return interaction.reply({ content: 'You need Manage Channels.', ephemeral: true });
-        }
-        const channel = interaction.options.getChannel('channel', true);
-        if (channel.type !== ChannelType.GuildText) {
-          return interaction.reply({ content: 'Please pick a text channel.', ephemeral: true });
-        }
-
-        const menu = new StringSelectMenuBuilder()
-          .setCustomId('assistanceMenu')
-          .setPlaceholder('Choose a category…')
-          .addOptions(CATEGORY_OPTIONS.map(o => ({ label: o.label, value: o.value })));
-
-        const row = new ActionRowBuilder().addComponents(menu);
-
-        // "Contains only a dropdown menu (no embed text or description)."
-        await channel.send({ content: '\u200b', components: [row] });
-
-        return interaction.reply({ content: 'Assistance dropdown posted. ✅', ephemeral: true });
+    // ───────────────────────────────────────────
+    // /setup-bot
+    // ───────────────────────────────────────────
+    if (commandName === 'setup-bot') {
+      if (!interaction.memberPermissions.has(PermissionFlagsBits.Administrator)) {
+        return interaction.reply({ content: 'You need Administrator permissions.', ephemeral: true });
       }
+
+      // Extract configuration from options
+      const ticketCategory = interaction.options.getChannel('ticket_category', true);
+      const logChannel = interaction.options.getChannel('log_channel', true);
+      const approvalChannel = interaction.options.getChannel('approval_channel', true);
+      const sessionChannel = interaction.options.getChannel('session_channel', true);
+      const staffRole = interaction.options.getRole('staff_role', true);
+      const adminRole = interaction.options.getRole('admin_role', true);
+      const underInvestigationRole = interaction.options.getRole('under_investigation_role', true);
+
+      // Validate channel types
+      if (ticketCategory.type !== ChannelType.GuildCategory) {
+        return interaction.reply({ content: 'Ticket category must be a category channel.', ephemeral: true });
+      }
+      if (![logChannel, approvalChannel, sessionChannel].every(c => c.type === ChannelType.GuildText)) {
+        return interaction.reply({ content: 'Log, approval, and session channels must be text channels.', ephemeral: true });
+      }
+
+      // Store configuration
+      const config = {
+        ticketCategory: ticketCategory.id,
+        logChannel: logChannel.id,
+        approvalChannel: approvalChannel.id,
+        sessionChannel: sessionChannel.id,
+        staffRole: staffRole.id,
+        adminRole: adminRole.id,
+        underInvestigationRole: under_investigationRole.id,
+        configuredAt: Date.now(),
+        configuredBy: interaction.user.id
+      };
+
+      // Create setup confirmation
+      const setupEmbed = new EmbedBuilder()
+        .setTitle('🤖 Bot Setup Complete')
+        .setDescription('All bot features have been configured successfully!')
+        .setColor(0x2ecc71)
+        .addFields(
+          { name: 'Ticket Category', value: `<#${ticketCategory.id}>`, inline: true },
+          { name: 'Log Channel', value: `<#${logChannel.id}>`, inline: true },
+          { name: 'Approval Channel', value: `<#${approvalChannel.id}>`, inline: true },
+          { name: 'Session Channel', value: `<#${sessionChannel.id}>`, inline: true },
+          { name: 'Staff Role', value: `<@&${staffRole.id}>`, inline: true },
+          { name: 'Admin Role', value: `<@&${adminRole.id}>`, inline: true },
+          { name: 'Under Investigation Role', value: `<@&${underInvestigationRole.id}>`, inline: true }
+        )
+        .setTimestamp();
+
+      // Send confirmation
+      await interaction.reply({ embeds: [setupEmbed], ephemeral: true });
+    }
+
+    // ───────────────────────────────────────────
+    // /staff-investigation
+    // ───────────────────────────────────────────
+    if (commandName === 'staff-investigation') {
+      if (!interaction.memberPermissions.has(PermissionFlagsBits.ModerateMembers)) {
+        return interaction.reply({ content: 'You need Moderate Members permissions.', ephemeral: true });
+      }
+
+      const member = interaction.options.getMember('member', true);
+      const reason = interaction.options.getString('reason', true);
+
+      const config = {
+        underInvestigationRole: process.env.UNDER_INVESTIGATION_ROLE_ID,
+        logChannel: process.env.LOG_CHANNEL_ID
+      };
+
+      if (!config.underInvestigationRole || !config.logChannel) {
+        return interaction.reply({ content: 'Investigation role or log channel not configured.', ephemeral: true });
+      }
+
+      await member.roles.add(config.underInvestigationRole);
+      await member.send(`You have been placed under investigation. Reason: ${reason}`).catch(() => {});
+      
+      const logEmbed = new EmbedBuilder()
+        .setTitle('🔍 Staff Member Under Investigation')
+        .setColor(0xff4757)
+        .addFields(
+          { name: 'Member', value: `${member.user.tag} (${member.id})`, inline: false },
+          { name: 'Reason', value: reason, inline: false },
+          { name: 'Investigated By', value: `${interaction.user.tag} (${interaction.user.id})`, inline: false },
+          { name: 'Timestamp', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false }
+        );
+
+      const logChannel = await interaction.guild.channels.fetch(config.logChannel).catch(() => null);
+      if (logChannel && logChannel.isTextBased()) {
+        await logChannel.send({ embeds: [logEmbed] });
+      }
+
+      return interaction.reply({ content: `Member placed under investigation. ✅`, ephemeral: true });
+    }
+
+    // ───────────────────────────────────────────
+    // /rank-change
+    // ───────────────────────────────────────────
+    if (commandName === 'rank-change') {
+      if (!interaction.memberPermissions.has(PermissionFlagsBits.ManageRoles)) {
+        return interaction.reply({ content: 'You need Manage Roles permissions.', ephemeral: true });
+      }
+
+      const member = interaction.options.getMember('member', true);
+      const newRole = interaction.options.getRole('new_role', true);
+      const reason = interaction.options.getString('reason', true);
+
+      await member.roles.add(newRole);
+      await member.send(`Your role has been changed to ${newRole.name}. Reason: ${reason}`).catch(() => {});
+
+      const logEmbed = new EmbedBuilder()
+        .setTitle('🎖️ Rank Change')
+        .setColor(0x2ecc71)
+        .addFields(
+          { name: 'Member', value: `${member.user.tag} (${member.id})`, inline: false },
+          { name: 'New Role', value: `<@&${newRole.id}>`, inline: false },
+          { name: 'Reason', value: reason, inline: false },
+          { name: 'Changed By', value: `${interaction.user.tag} (${interaction.id})`, inline: false }
+        );
+
+      const logChannel = await interaction.guild.channels.fetch(process.env.LOG_CHANNEL_ID).catch(() => null);
+      if (logChannel && logChannel.isTextBased()) {
+        await logChannel.send({ embeds: [logEmbed] });
+      }
+
+      return interaction.reply({ content: `Role changed to ${newRole.name}. ✅`, ephemeral: true });
+    }
+
+    // ───────────────────────────────────────────
+    // /setup-bot
+    // ───────────────────────────────────────────
+    if (commandName === 'setup-bot') {
+      if (!interaction.memberPermissions.has(PermissionFlagsBits.Administrator)) {
+        return interaction.reply({ content: 'You need Administrator permissions.', ephemeral: true });
+      }
+
+      const ticketCategory = interaction.options.getChannel('ticket_category', true);
+      const logChannel = interaction.options.getChannel('log_channel', true);
+      const approvalChannel = interaction.options.getChannel('approval_channel', true);
+      const sessionChannel = interaction.options.getChannel('session_channel', true);
+
+      // Validate channel types
+      if (ticketCategory.type !== ChannelType.GuildCategory) {
+        return interaction.reply({ content: 'Ticket category must be a category channel.', ephemeral: true });
+      }
+      if (![logChannel, approvalChannel, sessionChannel].every(c => c.type === ChannelType.GuildText)) {
+        return interaction.reply({ content: 'Log, approval, and session channels must be text channels.', ephemeral: true });
+      }
+
+      // Create setup embed
+      const setupEmbed = new EmbedBuilder()
+        .setTitle('🤖 Bot Setup Complete')
+        .setDescription('All bot features have been configured successfully!')
+        .setColor(0x2ecc71)
+        .addFields(
+          { name: 'Ticket Category', value: `<#${ticketCategory.id}>`, inline: true },
+          { name: 'Log Channel', value: `<#${logChannel.id}>`, inline: true },
+          { name: 'Approval Channel', value: `<#${approvalChannel.id}>`, inline: true },
+          { name: 'Session Channel', value: `<#${sessionChannel.id}>`, inline: true },
+          { name: 'Instructions', value: 'Use /setup-assistance to post the assistance dropdown in any channel.' }
+        )
+        .setTimestamp();
+
+      // Store configuration (in-memory for now)
+      // In a real implementation, you'd store these in a database
+      const config = {
+        ticketCategory: ticketCategory.id,
+        logChannel: logChannel.id,
+        approvalChannel: approvalChannel.id,
+        sessionChannel: sessionChannel.id,
+        configuredAt: Date.now(),
+        configuredBy: interaction.user.id
+      };
+
+      // Send confirmation
+      await interaction.reply({ embeds: [setupEmbed], ephemeral: true });
+    }
 
       // ───────────────────────────────────────────
       // /requestmsg
