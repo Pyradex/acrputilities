@@ -1,13 +1,9 @@
 {
-  "name": "acrp-utilities",
-  "version": "1.0.0",
-  "description": "ACRP Utilities Bot",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "discord.js": "^14.16.3",
-    "express": "^4.19.2"
-  }
+  "assistance_channel": "",
+  "general_support_channel": "",
+  "community_support_channel": "",
+  "gs_access_roles": [],
+  "cs_access_roles": [],
+  "loa_role_id": "",
+  "ticket_logs_channel": ""
 }
