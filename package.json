@@ -1,0 +1,13 @@
+{
+  "name": "acrp-utilities",
+  "version": "1.0.0",
+  "description": "ACRP Utilities Bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.0",
+    "fs-extra": "^11.1.1"
+  }
+}
