@@ -1,0 +1,8 @@
+{
+  "token": "YOUR_BOT_TOKEN_HERE",
+  "default_assistance_channel_id": null,
+  "default_general_requests_channel_id": null,
+  "default_community_requests_channel_id": null,
+  "default_ticket_logs_channel_id": null,
+  "default_category_id": null
+}
